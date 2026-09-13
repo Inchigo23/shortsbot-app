@@ -597,6 +597,7 @@ function pintarPreparados() {
       <div class="botones">
         <button onclick="verPrevia('${esc(p.id)}')">▶ Ver</button>
         <button onclick="subirYa('${esc(p.id)}')">🚀 Subir ya</button>
+        <button onclick="rehacer('${esc(p.id)}')">🔁 Rehacer</button>
         <button class="peligro" onclick="descartar('${esc(p.id)}')">Descartar</button>
       </div></div></div>`).join("") : `<div class="vacio">No hay vídeos preparados. Se hacen solos cuando llegan guiones nuevos.</div>`;
   const subidos = E.subidos || [];
@@ -660,6 +661,10 @@ $("b-cerrar").addEventListener("click", cerrarVideo);
 async function subirYa(id) {
   if (!confirm("¿Subir este vídeo a YouTube ahora, sin esperar a su hora?")) return;
   try { await lanzar(`subir:${id}`); aviso("¡Hecho! En 1-2 minutos empieza a subirse."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
+}
+async function rehacer(id) {
+  if (!confirm("¿Rehacer este vídeo? Se hará otra vez desde su guion (tarda unos 5 minutos).")) return;
+  try { await lanzar(`rehacer:${id}`); aviso("Rehaciéndolo… verás a los agentes trabajando en «Inicio»."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
 }
 async function descartar(id) {
   if (!confirm("¿Descartar este vídeo? No se subirá y se borrará en la próxima vuelta.")) return;

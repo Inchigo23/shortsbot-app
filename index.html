@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060a18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShortsBot">
+<meta name="description" content="ShortsBot: app personal para controlar un bot que crea y sube Shorts de curiosidades de Minecraft a mi canal de YouTube.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<title>ShortsBot</title>
+<style>
+  :root {
+    --fondo: #060a18; --superficie: #0b1230; --cristal: rgba(13, 21, 46, .78); --cristal2: rgba(22, 33, 68, .85);
+    --borde: rgba(120, 170, 255, .16); --borde2: rgba(120, 170, 255, .32);
+    --texto: #e8eeff; --suave: #8f9dc4; --tenue: #5d6a8f; --cian: #5ef2ff; --serie: #1a9bd7;
+    --verde: #4ade80; --azul: #60a5fa; --ambar: #fbbf24; --rojo: #fb7185; --morado: #b388ff; --radio: 16px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--fondo); }
+  body { margin: 0; color: var(--texto); min-height: 100vh; padding-bottom: calc(76px + env(safe-area-inset-bottom));
+         font: 15px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+         background: radial-gradient(900px 600px at 50% 0%, #13204a 0%, #0a1230 45%, var(--fondo) 100%) fixed; }
+  main { max-width: 900px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top)) 16px 24px; }
+  h2 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .16em; color: var(--suave); margin: 26px 0 10px; font-weight: 700; }
+  a { color: var(--cian); }
+  .cristal { background: var(--cristal); border: 1px solid var(--borde); border-radius: var(--radio);
+             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .sup { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .marca { font-weight: 800; letter-spacing: .14em; font-size: 15px; }
+  .marca b { color: var(--cian); }
+  .sup .espacio { flex: 1; }
+  .icono-btn { background: none; border: 1px solid var(--borde); color: var(--texto); border-radius: 10px; width: 38px; height: 38px;
+               font-size: 17px; cursor: pointer; display: grid; place-items: center; }
+  button, .boton { font: inherit; font-size: 14px; font-weight: 650; color: var(--texto); background: var(--cristal2);
+           border: 1px solid var(--borde); border-radius: 12px; padding: 10px 14px; cursor: pointer; text-decoration: none;
+           display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+  button:hover, .boton:hover { border-color: var(--borde2); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.principal { background: linear-gradient(135deg, #22d3ee, #6366f1); border-color: transparent; color: #fff; }
+  button.peligro { color: var(--rojo); }
+  .aviso { padding: 12px 14px; margin-bottom: 12px; border-color: rgba(251, 191, 36, .4); font-size: 14px; }
+  .aviso.error { border-color: rgba(251, 113, 133, .5); }
+
+  /* Estado */
+  .estado { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 16px; --c: var(--azul); }
+  .estado .punto { width: 16px; height: 16px; border-radius: 50%; background: var(--c); box-shadow: 0 0 16px var(--c); }
+  .estado.vivo .punto { animation: parpadeo 1.2s ease-in-out infinite; }
+  @keyframes parpadeo { 50% { opacity: .35; } }
+  .pregunta { font-size: 11.5px; color: var(--suave); text-transform: uppercase; letter-spacing: .12em; }
+  .respuesta { font-size: 21px; font-weight: 800; line-height: 1.2; }
+  .respuesta b { color: var(--c); }
+  .detalle { opacity: .85; font-size: 14px; margin-top: 2px; }
+
+  /* Órbita */
+  .orbita { display: grid; place-items: center; margin: 6px 0; }
+  #mapa { width: min(100%, 420px); aspect-ratio: 1; display: block; overflow: visible; }
+  #mapa text { font-family: "Segoe UI", system-ui, sans-serif; }
+  .anillo { fill: none; stroke: rgba(120, 170, 255, .13); }
+  .radio { stroke: rgba(120, 170, 255, .12); transition: stroke .5s; }
+  .radio.activo { stroke: rgba(94, 242, 255, .55); stroke-width: 1.6; }
+  #haz { transform-box: view-box; transform-origin: 0 0; transition: transform .9s cubic-bezier(.6, 0, .2, 1), opacity .5s; }
+  .gira { animation: gira 9s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .gira.lento { animation-duration: 16s; animation-direction: reverse; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  .nodo .halo { opacity: .25; transition: opacity .5s; }
+  .nodo.activo .halo { opacity: .95; }
+  .nodo .onda { opacity: 0; fill: none; stroke-width: 2; }
+  .nodo.activo .onda { animation: onda 1.6s ease-out infinite; }
+  @keyframes onda { from { opacity: .9; r: 26; } to { opacity: 0; r: 52; } }
+  .nodo { transition: opacity .5s; opacity: .55; }
+  .nodo.activo, .nodo.hecho { opacity: 1; }
+  .nodo .nombre { fill: #fff; font-size: 14px; font-weight: 700; text-anchor: middle; }
+  .nodo .sit { fill: var(--suave); font-size: 11.5px; text-anchor: middle; }
+  .nodo.activo .sit { fill: var(--cian); font-weight: 700; }
+
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .cifra { padding: 14px; }
+  .cifra b { display: block; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .cifra span { color: var(--suave); font-size: 12.5px; }
+  .fila-lista { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 11px 14px; align-items: center; }
+  .fila-lista + .fila-lista { border-top: 1px solid rgba(255,255,255,.05); }
+  .fila-lista time { font-weight: 800; color: var(--cian); font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .fila-lista time small { display: block; font-size: 11px; color: var(--suave); font-weight: 600; text-transform: uppercase; }
+  .t { font-weight: 650; font-size: 14px; line-height: 1.3; }
+  .meta { color: var(--suave); font-size: 12.5px; }
+  .vacio { color: var(--suave); text-align: center; padding: 26px 16px; }
+
+  /* Gráfica */
+  .grafica { padding: 16px 14px 10px; }
+  .grafica-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .grafica-cab .tit { font-weight: 750; flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 11px; font-size: 13px; background: none; color: var(--suave); }
+  .seg button.si { background: var(--cristal2); color: var(--texto); }
+  .lienzo { position: relative; }
+  #grafica { width: 100%; height: 220px; display: block; overflow: visible; }
+  #grafica .rejilla line { stroke: rgba(143, 157, 196, .14); }
+  #grafica .eje text { fill: var(--tenue); font-size: 11px; }
+  #grafica .linea { fill: none; stroke: var(--serie); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  #grafica .area { fill: url(#g-area); }
+  #grafica .cruz { stroke: rgba(232, 238, 255, .35); stroke-width: 1; }
+  #grafica .marca { fill: var(--serie); stroke: var(--superficie); stroke-width: 2; }
+  .tip { position: absolute; pointer-events: none; background: var(--cristal2); border: 1px solid var(--borde2); border-radius: 10px;
+         padding: 7px 10px; font-size: 12.5px; white-space: nowrap; transform: translate(-50%, -110%); }
+  .tip b { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .tabla { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .tabla th, .tabla td { text-align: left; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .tabla td:last-child, .tabla th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .enlace { background: none; border: 0; color: var(--cian); padding: 4px 0; font-size: 13px; }
+
+  /* Vídeos */
+  .video { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 12px; align-items: start; }
+  .video + .video { border-top: 1px solid rgba(255,255,255,.05); }
+  .video img { width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: #000; display: block; }
+  .video.vertical img { aspect-ratio: 9 / 16; }
+  .barra { height: 6px; border-radius: 99px; background: rgba(255,255,255,.07); margin: 6px 0 2px; overflow: hidden; }
+  .barra i { display: block; height: 100%; background: var(--serie); border-radius: 99px; }
+  .insignia { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.08); margin-left: 4px; }
+  .insignia.privado { color: var(--ambar); } .insignia.publico { color: var(--verde); } .insignia.oculto { color: var(--azul); }
+  .botones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .botones button, .botones .boton { padding: 7px 11px; font-size: 13px; border-radius: 10px; }
+
+  .linea-log { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 8px 14px; font-size: 13.5px; }
+  .linea-log + .linea-log { border-top: 1px solid rgba(255,255,255,.05); }
+  .linea-log time { color: var(--suave); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  .linea-log.aviso span, .linea-log.error span { color: var(--ambar); }
+  .linea-log.error span { color: var(--rojo); }
+
+  /* Navegación inferior */
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 4px;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: rgba(6, 10, 24, .92);
+        border-top: 1px solid var(--borde); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 5; }
+  nav button { flex: 1; max-width: 150px; flex-direction: column; gap: 2px; background: none; border: 0; color: var(--suave);
+               font-size: 11.5px; padding: 6px 4px; border-radius: 10px; }
+  nav button span { font-size: 20px; line-height: 1; }
+  nav button.si { color: var(--texto); background: var(--cristal2); }
+
+  /* Conexión */
+  .conectar { max-width: 560px; margin: 30px auto; padding: 22px; }
+  .conectar h1 { font-size: 22px; margin: 0 0 6px; }
+  .conectar ol { padding-left: 20px; }
+  .conectar li { margin-bottom: 8px; }
+  .conectar input { width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde2);
+                    background: rgba(0,0,0,.35); color: var(--texto); margin: 6px 0 12px; }
+  code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 6px; font-size: 13px; }
+
+  #modal { position: fixed; inset: 0; background: rgba(2, 5, 15, .9); display: grid; place-items: center; z-index: 10; padding: 18px; }
+  #modal video { max-height: 84vh; max-width: 100%; border-radius: 14px; background: #000; }
+  #modal .cerrar { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 14px; }
+  #toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+           padding: 11px 16px; max-width: 92vw; z-index: 20; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  footer { text-align: center; color: var(--tenue); font-size: 12px; margin-top: 30px; }
+  @media (min-width: 720px) { .acciones { grid-template-columns: repeat(4, 1fr); } }
+</style>
+</head>
+<body>
+
+<!-- Pantalla de conexión -->
+<section id="v-conectar" hidden>
+  <div class="cristal conectar">
+    <h1>🤖 ShortsBot</h1>
+    <p class="meta">App personal para controlar el bot que crea y sube Shorts de curiosidades de Minecraft a mi canal.
+      Tus datos están en tu repositorio privado de GitHub; esta página solo los lee con tu clave, que se guarda en este dispositivo.</p>
+    <h2 style="margin-top:18px">Conecta la app (una vez por dispositivo)</h2>
+    <ol>
+      <li>Abre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Crear clave (fine-grained token)</a>.</li>
+      <li>Nombre: <code>ShortsBot app</code>. Caducidad: la más larga que te deje.</li>
+      <li><b>Repository access</b> → <b>Only select repositories</b> → elige <code>shortsbot</code>.</li>
+      <li><b>Permissions</b> → <b>Actions: Read and write</b> y <b>Contents: Read and write</b>.</li>
+      <li>Pulsa <b>Generate token</b>, cópialo y pégalo aquí:</li>
+    </ol>
+    <input id="in-token" type="password" autocomplete="off" placeholder="github_pat_…">
+    <input id="in-repo" type="text" autocomplete="off" value="Inchigo23/shortsbot" aria-label="Repositorio">
+    <button class="principal" id="b-conectar" style="width:100%">Conectar</button>
+    <p class="meta" id="error-conectar"></p>
+    <footer><a href="privacidad.html">Política de privacidad</a></footer>
+  </div>
+</section>
+
+<!-- App -->
+<main id="v-app" hidden>
+  <header class="sup">
+    <div class="marca"><b>SHORTS</b>BOT</div>
+    <span class="espacio"></span>
+    <button class="icono-btn" id="b-recargar" title="Actualizar">⟳</button>
+    <button class="icono-btn" id="b-ajustes" title="Ajustes">⚙</button>
+  </header>
+  <div id="avisos"></div>
+
+  <!-- Inicio -->
+  <section data-vista="inicio">
+    <div class="cristal estado" id="estado">
+      <div class="punto"></div>
+      <div>
+        <div class="pregunta">¿Está trabajando?</div>
+        <div class="respuesta" id="respuesta">Cargando…</div>
+        <div class="detalle" id="detalle"></div>
+      </div>
+    </div>
+    <div class="orbita">
+      <svg id="mapa" viewBox="-300 -300 600 600" role="img" aria-label="Agentes de ShortsBot">
+        <defs>
+          <radialGradient id="g-nucleo"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#9ff8ff"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+          <linearGradient id="g-haz" x1="0" x2="1"><stop offset="0" stop-color="#9ff8ff" stop-opacity=".75"/><stop offset="1" stop-color="#5ef2ff" stop-opacity="0"/></linearGradient>
+        </defs>
+        <g id="estrellas"></g>
+        <circle class="anillo" r="100"/><circle class="anillo" r="165" stroke-dasharray="2 6"/><circle class="anillo" r="215"/>
+        <g id="radios"></g>
+        <g id="haz" opacity="0"><polygon points="0,-5 225,-42 225,42 0,5" fill="url(#g-haz)"/></g>
+        <circle id="brillo" r="66" fill="url(#g-nucleo)" opacity=".4"/>
+        <g transform="rotate(28)"><ellipse class="gira" rx="44" ry="14" fill="none" stroke="#8ff6ff" stroke-width="1.6" opacity=".8"/></g>
+        <g transform="rotate(-32)"><ellipse class="gira lento" rx="44" ry="14" fill="none" stroke="#8ff6ff" stroke-width="1.6" opacity=".8"/></g>
+        <circle r="23" fill="#bff9ff" id="bola"/>
+        <text y="4" text-anchor="middle" font-size="8.5" font-weight="800" fill="#063444" letter-spacing="1.2">NÚCLEO</text>
+        <g id="nodos"></g>
+      </svg>
+    </div>
+    <div class="acciones">
+      <button id="a-producir">🎬 Hacer un vídeo ya</button>
+      <button id="a-subir">🚀 Subir el siguiente</button>
+      <button id="a-pausa">⏸ Pausar</button>
+      <button id="a-stats">📊 Actualizar datos</button>
+    </div>
+    <h2>Próximas subidas</h2>
+    <div class="cristal" id="parrilla"></div>
+  </section>
+
+  <!-- Canal -->
+  <section data-vista="canal" hidden>
+    <div class="cifras">
+      <div class="cristal cifra"><b id="k-subs">–</b><span>Suscriptores</span></div>
+      <div class="cristal cifra"><b id="k-vistas">–</b><span>Visitas totales</span></div>
+      <div class="cristal cifra"><b id="k-videos">–</b><span>Vídeos</span></div>
+    </div>
+    <p class="meta" id="k-actualizado" style="margin:8px 2px 0"></p>
+    <h2>Evolución</h2>
+    <div class="cristal grafica">
+      <div class="grafica-cab">
+        <div class="tit" id="g-titulo">Visitas totales</div>
+        <div class="seg" role="tablist">
+          <button class="si" data-metrica="vistas">Visitas</button>
+          <button data-metrica="suscriptores">Suscriptores</button>
+        </div>
+      </div>
+      <div class="lienzo" id="lienzo">
+        <svg id="grafica" role="img" aria-label="Evolución del canal"></svg>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <button class="enlace" id="b-tabla">Ver como tabla</button>
+      <div id="tabla" hidden></div>
+    </div>
+    <h2>Vídeos del canal</h2>
+    <div class="cristal" id="videos-canal"></div>
+  </section>
+
+  <!-- Preparados -->
+  <section data-vista="preparados" hidden>
+    <h2 style="margin-top:4px">Vídeos preparados</h2>
+    <div class="cristal" id="preparados"></div>
+    <h2>Guiones en espera</h2>
+    <div class="cristal" id="guiones"></div>
+    <h2>Subidos por la nube</h2>
+    <div class="cristal" id="subidos"></div>
+  </section>
+
+  <!-- Registro -->
+  <section data-vista="registro" hidden>
+    <h2 style="margin-top:4px">Últimas vueltas</h2>
+    <div class="cristal" id="vueltas"></div>
+    <h2>Registro de misión</h2>
+    <div class="cristal" id="log"></div>
+    <footer><a href="privacidad.html">Política de privacidad</a></footer>
+  </section>
+</main>
+
+<nav id="nav" hidden>
+  <button data-ir="inicio" class="si"><span>🛰️</span>Inicio</button>
+  <button data-ir="canal"><span>📈</span>Canal</button>
+  <button data-ir="preparados"><span>🎬</span>Preparados</button>
+  <button data-ir="registro"><span>📜</span>Registro</button>
+</nav>
+
+<div id="modal" hidden><button class="cerrar" id="b-cerrar">✕ Cerrar</button><video id="video" controls playsinline></video></div>
+<div id="toast" class="cristal" hidden></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = "https://api.github.com";
+const SVG = "http://www.w3.org/2000/svg";
+const FLUJO = "shortsbot.yml";
+let TOKEN = null, REPO = null;
+try { TOKEN = localStorage.getItem("sb_token"); REPO = localStorage.getItem("sb_repo"); } catch {}
+
+const AGENTES = [
+  { id: "planificador", icono: "🗓️", nombre: "Planificador", color: "#fb923c" },
+  { id: "guionista",    icono: "✍️", nombre: "Guionista",    color: "#fbbf24" },
+  { id: "narrador",     icono: "🎙️", nombre: "Narrador",     color: "#e879f9" },
+  { id: "animador",     icono: "🧱", nombre: "Animador",     color: "#a3e635" },
+  { id: "montador",     icono: "🎬", nombre: "Montador",     color: "#fb7185" },
+  { id: "mensajero",    icono: "🚀", nombre: "Mensajero",    color: "#818cf8" },
+  { id: "estadista",    icono: "📊", nombre: "Estadista",    color: "#2dd4bf" },
+];
+let E = null, CONTROL = null, CONTROL_SHA = null, VUELTAS = [], PASOS = [], METRICA = "vistas", anguloHaz = null;
+
+/* ---------- utilidades ---------- */
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = (n) => n === null || n === undefined ? "–" : Number(n).toLocaleString("es-ES");
+const hora = (t) => new Date(t * 1000).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+function hace(t) {
+  if (!t) return "nunca";
+  const s = Date.now() / 1000 - t;
+  if (s < 60) return "ahora mismo";
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `hace ${Math.floor(s / 3600)} h`;
+  return new Date(t * 1000).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+function dia(t) {
+  const d = new Date(t * 1000), hoy = new Date(), man = new Date(Date.now() + 864e5);
+  if (d.toDateString() === hoy.toDateString()) return "hoy";
+  if (d.toDateString() === man.toDateString()) return "mañana";
+  return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" });
+}
+function proximaVuelta() {  // el workflow pasa a los :17 de cada hora par (UTC)
+  const t = new Date(); t.setUTCSeconds(0, 0);
+  for (let i = 0; i < 180; i++) {
+    t.setUTCMinutes(t.getUTCMinutes() + 1);
+    if (t.getUTCMinutes() === 17 && t.getUTCHours() % 2 === 0) return t;
+  }
+  return t;
+}
+const b64aTexto = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
+const textoAb64 = (txt) => btoa(String.fromCharCode(...new TextEncoder().encode(txt)));
+let temporizador;
+function aviso(texto) {
+  const t = $("toast"); t.textContent = texto; t.hidden = false;
+  clearTimeout(temporizador); temporizador = setTimeout(() => (t.hidden = true), 4500);
+}
+
+/* ---------- GitHub ---------- */
+async function gh(ruta, opciones = {}) {
+  const r = await fetch(API + ruta, {
+    cache: "no-store", ...opciones,
+    headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(opciones.headers || {}) },
+  });
+  if (r.status === 401) { desconectar("La clave ya no vale (¿ha caducado?). Crea otra y vuelve a conectar."); throw new Error("401"); }
+  if (!r.ok && r.status !== 204) throw new Error(`GitHub respondió ${r.status}`);
+  return r.status === 204 ? null : r;
+}
+const leerEstado = async () => (await gh(`/repos/${REPO}/contents/nube/estado.json?ref=main`, { headers: { Accept: "application/vnd.github.raw+json" } })).json();
+async function leerControl() {
+  const j = await (await gh(`/repos/${REPO}/contents/nube/control.json?ref=main`)).json();
+  CONTROL_SHA = j.sha;
+  return JSON.parse(b64aTexto(j.content));
+}
+async function guardarControl(cambios, mensaje) {
+  const actual = await leerControl();
+  const nuevo = { ...actual, ...cambios(actual) };
+  await gh(`/repos/${REPO}/contents/nube/control.json`, { method: "PUT", body: JSON.stringify({
+    message: `App: ${mensaje}`, content: textoAb64(JSON.stringify(nuevo, null, 1) + "\n"), sha: CONTROL_SHA, branch: "main" }) });
+  CONTROL = nuevo;
+}
+async function lanzar(accion) {
+  await gh(`/repos/${REPO}/actions/workflows/${FLUJO}/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main", inputs: { accion } }) });
+}
+async function leerVueltas() {
+  const j = await (await gh(`/repos/${REPO}/actions/runs?per_page=8`)).json();
+  VUELTAS = j.workflow_runs || [];
+  const viva = VUELTAS.find((v) => v.status === "in_progress" || v.status === "queued");
+  PASOS = [];
+  if (viva) {
+    const jobs = await (await gh(`/repos/${REPO}/actions/runs/${viva.id}/jobs`)).json();
+    PASOS = (jobs.jobs?.[0]?.steps || []);
+  }
+  return viva;
+}
+
+/* ---------- conexión ---------- */
+function mostrar(conectado) {
+  $("v-conectar").hidden = conectado; $("v-app").hidden = !conectado; $("nav").hidden = !conectado;
+}
+function desconectar(motivo) {
+  try { localStorage.removeItem("sb_token"); } catch {}
+  TOKEN = null; mostrar(false);
+  $("error-conectar").textContent = motivo || "";
+}
+$("b-conectar").addEventListener("click", async () => {
+  const t = $("in-token").value.trim(), r = $("in-repo").value.trim();
+  if (!t) return;
+  $("b-conectar").disabled = true; $("error-conectar").textContent = "Comprobando…";
+  TOKEN = t; REPO = r;
+  try {
+    const res = await fetch(`${API}/repos/${REPO}`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+    if (!res.ok) throw new Error(res.status === 404 ? "No veo ese repositorio con esta clave. Revisa el paso 3." : `GitHub respondió ${res.status}`);
+    try { localStorage.setItem("sb_token", TOKEN); localStorage.setItem("sb_repo", REPO); } catch {}
+    $("in-token").value = ""; $("error-conectar").textContent = "";
+    mostrar(true); construirMapa(); refrescar();
+  } catch (e) { $("error-conectar").textContent = e.message; TOKEN = null; }
+  $("b-conectar").disabled = false;
+});
+$("b-ajustes").addEventListener("click", () => {
+  if (confirm(`Conectado a ${REPO}.\n\n¿Quieres desconectar la app de este dispositivo? (Tendrás que pegar la clave otra vez)`)) desconectar();
+});
+
+/* ---------- navegación ---------- */
+let VISTA = "inicio";
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  VISTA = b.dataset.ir;
+  document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("si", x === b));
+  document.querySelectorAll("[data-vista]").forEach((s) => (s.hidden = s.dataset.vista !== VISTA));
+  if (VISTA === "canal") pintarGrafica();
+  if (VISTA === "preparados") pintarGuiones();
+  window.scrollTo(0, 0);
+}));
+
+/* ---------- órbita ---------- */
+function el(tag, attrs = {}) { const e = document.createElementNS(SVG, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function construirMapa() {
+  if ($("nodos").childElementCount) return;
+  for (let i = 0; i < 70; i++) {
+    const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 260;
+    const c = el("circle", { cx: (Math.cos(a) * r).toFixed(1), cy: (Math.sin(a) * r).toFixed(1), r: (Math.random() * 1.2 + .3).toFixed(2), fill: "#fff" });
+    c.style.opacity = (Math.random() * .5 + .15).toFixed(2);
+    $("estrellas").appendChild(c);
+  }
+  const defs = document.querySelector("#mapa defs");
+  AGENTES.forEach((a, i) => {
+    a.angulo = -90 + i * (360 / AGENTES.length);
+    const rad = a.angulo * Math.PI / 180, R = 205;
+    a.x = Math.cos(rad) * R; a.y = Math.sin(rad) * R;
+    const g = el("radialGradient", { id: "g-" + a.id });
+    g.append(el("stop", { offset: "0", "stop-color": a.color, "stop-opacity": ".85" }), el("stop", { offset: "1", "stop-color": a.color, "stop-opacity": "0" }));
+    defs.appendChild(g);
+    $("radios").appendChild(el("line", { x1: 0, y1: 0, x2: a.x.toFixed(1), y2: a.y.toFixed(1), class: "radio", id: "radio-" + a.id }));
+    const n = el("g", { class: "nodo", id: "nodo-" + a.id, transform: `translate(${a.x.toFixed(1)} ${a.y.toFixed(1)})` });
+    const hex = [...Array(6)].map((_, k) => { const t = (60 * k - 90) * Math.PI / 180; return `${(Math.cos(t) * 25).toFixed(1)},${(Math.sin(t) * 25).toFixed(1)}`; }).join(" ");
+    n.append(el("circle", { r: 48, fill: `url(#g-${a.id})`, class: "halo" }), el("circle", { r: 26, stroke: a.color, class: "onda" }),
+             el("polygon", { points: hex, fill: a.color, "fill-opacity": ".92", stroke: "#fff", "stroke-opacity": ".5", "stroke-width": 1.4 }));
+    const ico = el("text", { y: 7, "text-anchor": "middle", "font-size": 19 }); ico.textContent = a.icono;
+    const nom = el("text", { y: 45, class: "nombre" }); nom.textContent = a.nombre;
+    const sit = el("text", { y: 60, class: "sit", id: "sit-" + a.id }); sit.textContent = "reposo";
+    n.append(ico, nom, sit);
+    $("nodos").appendChild(n);
+  });
+}
+function apuntar(grados) {
+  if (anguloHaz === null) anguloHaz = grados; else anguloHaz += ((grados - anguloHaz) % 360 + 540) % 360 - 180;
+  $("haz").style.transform = `rotate(${anguloHaz}deg)`;
+}
+function agenteDePaso(nombre) { return AGENTES.find((a) => nombre && nombre.startsWith(a.icono)); }
+
+/* ---------- pintar ---------- */
+function pintarEstado(viva) {
+  const caja = $("estado");
+  const pasoActual = PASOS.find((p) => p.status === "in_progress");
+  const ag = pasoActual && agenteDePaso(pasoActual.name);
+  let color = "var(--azul)", resp, det, vivo = false;
+  if (viva) {
+    vivo = true; color = "var(--verde)";
+    resp = "Sí, <b>trabajando</b>";
+    det = pasoActual ? `${pasoActual.name.replace(/^⚙️\s*/, "⚙️ ")} · empezó ${hace(Date.parse(viva.run_started_at || viva.created_at) / 1000)}`
+                     : viva.status === "queued" ? "En cola, empieza en unos segundos" : "Arrancando…";
+  } else if (CONTROL?.pausado) {
+    color = "var(--ambar)"; resp = "No, <b>en pausa</b>"; det = "Lo has pausado desde la app. Pulsa «Reanudar» para seguir.";
+  } else {
+    const ultima = VUELTAS[0];
+    if (ultima && ultima.conclusion === "failure") { color = "var(--rojo)"; resp = "Hubo un <b>problema</b>"; det = "La última vuelta falló. Mira «Registro»."; }
+    else { resp = "Encendido, <b>en espera</b>"; det = `Próxima vuelta hacia las ${proximaVuelta().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`; }
+  }
+  caja.style.setProperty("--c", color); caja.classList.toggle("vivo", vivo);
+  $("respuesta").innerHTML = resp; $("detalle").textContent = det;
+
+  const hechos = new Set(PASOS.filter((p) => p.status === "completed" && p.conclusion === "success").map((p) => agenteDePaso(p.name)?.id));
+  AGENTES.forEach((a) => {
+    const n = $("nodo-" + a.id);
+    n.classList.toggle("activo", ag?.id === a.id);
+    n.classList.toggle("hecho", hechos.has(a.id) && ag?.id !== a.id);
+    $("radio-" + a.id).classList.toggle("activo", ag?.id === a.id);
+    $("sit-" + a.id).textContent = ag?.id === a.id ? "● trabajando" : hechos.has(a.id) ? "✓ hecho" : "reposo";
+  });
+  $("haz").setAttribute("opacity", ag ? "1" : "0");
+  if (ag) apuntar(ag.angulo);
+  $("brillo").setAttribute("opacity", viva ? ".95" : ".4");
+  $("a-pausa").textContent = CONTROL?.pausado ? "▶ Reanudar" : "⏸ Pausar";
+}
+
+function pintarAvisos() {
+  const av = [];
+  if (E && E.youtube_ok === false) av.push(`<div class="cristal aviso error">⚠️ <b>YouTube no está conectado en la nube.</b> Hay que guardar el permiso en GitHub (secreto <code>YOUTUBE_TOKEN</code>). Mientras tanto se siguen haciendo vídeos, pero no se suben.</div>`);
+  if (E && E.guiones_en_espera === 0 && !(E.preparados || []).length) av.push(`<div class="cristal aviso">✍️ No hay guiones esperando. Claude escribe 2 cada día a las 10:00.</div>`);
+  $("avisos").innerHTML = av.join("");
+}
+
+function pintarParrilla() {
+  const cuando = Object.fromEntries((E.parrilla || []).map((p) => [p.id, p.cuando]));
+  const lista = (E.preparados || []);
+  $("parrilla").innerHTML = lista.length ? lista.map((p) => `
+    <div class="fila-lista"><time>${cuando[p.id] ? hora(cuando[p.id]) : "–"}<small>${cuando[p.id] ? dia(cuando[p.id]) : ""}</small></time>
+    <div><div class="t">${esc(p.titulo)}</div><div class="meta">${Math.round(p.duracion)} s · ${esc(p.escena?.bioma || "")} · voz ${esc(p.voz || "")}</div></div></div>`).join("")
+    : `<div class="vacio">No hay vídeos preparados ahora mismo.</div>`;
+}
+
+function pintarCanal() {
+  const c = E.canal || {};
+  $("k-subs").textContent = num(c.suscriptores); $("k-vistas").textContent = num(c.vistas); $("k-videos").textContent = num(c.videos);
+  $("k-actualizado").textContent = c.actualizado ? `Canal «${c.titulo}» · datos de ${hace(c.actualizado)}` : "Aún no hay estadísticas: aparecerán en cuanto la nube tenga el permiso de YouTube.";
+  const vids = E.videos_canal || [];
+  const max = Math.max(1, ...vids.map((v) => v.vistas));
+  const priv = { private: ["privado", "Privado"], public: ["publico", "Público"], unlisted: ["oculto", "Oculto"] };
+  $("videos-canal").innerHTML = vids.length ? vids.map((v) => {
+    const [cls, txt] = priv[v.privacidad] || ["", v.privacidad];
+    return `<div class="video"><a href="https://studio.youtube.com/video/${esc(v.id)}/edit" target="_blank" rel="noopener"><img loading="lazy" src="${esc(v.imagen || "")}" alt=""></a>
+      <div><div class="t">${esc(v.titulo)}<span class="insignia ${cls}">${esc(txt)}</span></div>
+      <div class="barra" title="${num(v.vistas)} visitas"><i style="width:${(v.vistas / max * 100).toFixed(1)}%"></i></div>
+      <div class="meta">${num(v.vistas)} visitas · ${num(v.likes)} me gusta · ${num(v.comentarios)} comentarios · ${new Date(v.publicado).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div></div></div>`;
+  }).join("") : `<div class="vacio">Sin datos del canal todavía.</div>`;
+}
+
+function pintarGrafica() {
+  const svg = $("grafica"), datos = (E?.historial || []).filter((p) => p[METRICA] !== null && p[METRICA] !== undefined);
+  $("g-titulo").textContent = METRICA === "vistas" ? "Visitas totales" : "Suscriptores";
+  svg.innerHTML = ""; $("tip").hidden = true;
+  const ancho = $("lienzo").clientWidth || 600, alto = 220, m = { i: 44, d: 12, a: 12, b: 26 };
+  svg.setAttribute("viewBox", `0 0 ${ancho} ${alto}`);
+  if (datos.length < 2) {
+    const t = el("text", { x: ancho / 2, y: alto / 2, "text-anchor": "middle", fill: "#8f9dc4", "font-size": 13 });
+    t.textContent = datos.length ? "La gráfica aparece cuando haya datos de 2 días." : "Aún no hay datos.";
+    svg.appendChild(t); pintarTabla(datos); return;
+  }
+  const vals = datos.map((p) => p[METRICA]);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo = Math.max(0, lo - 1); hi = hi + 1; }
+  const pad = (hi - lo) * .12; lo = Math.max(0, lo - pad); hi = hi + pad;
+  const x = (i) => m.i + i / (datos.length - 1) * (ancho - m.i - m.d);
+  const y = (v) => m.a + (1 - (v - lo) / (hi - lo)) * (alto - m.a - m.b);
+  const defs = el("defs"); const lg = el("linearGradient", { id: "g-area", x1: 0, x2: 0, y1: 0, y2: 1 });
+  lg.append(el("stop", { offset: 0, "stop-color": "#1a9bd7", "stop-opacity": ".28" }), el("stop", { offset: 1, "stop-color": "#1a9bd7", "stop-opacity": "0" }));
+  defs.appendChild(lg); svg.appendChild(defs);
+  const rej = el("g", { class: "rejilla" }), eje = el("g", { class: "eje" });
+  for (let k = 0; k <= 3; k++) {
+    const v = lo + (hi - lo) * k / 3, yy = y(v);
+    rej.appendChild(el("line", { x1: m.i, x2: ancho - m.d, y1: yy, y2: yy }));
+    const t = el("text", { x: m.i - 8, y: yy + 4, "text-anchor": "end" }); t.textContent = Math.round(v).toLocaleString("es-ES"); eje.appendChild(t);
+  }
+  [0, Math.floor((datos.length - 1) / 2), datos.length - 1].forEach((i, k, arr) => {
+    if (k && i === arr[k - 1]) return;
+    const t = el("text", { x: x(i), y: alto - 6, "text-anchor": k === 0 ? "start" : k === arr.length - 1 ? "end" : "middle" });
+    t.textContent = new Date(datos[i].fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" }); eje.appendChild(t);
+  });
+  const d = datos.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[METRICA]).toFixed(1)}`).join("");
+  svg.append(rej, el("path", { class: "area", d: `${d}L${x(datos.length - 1)},${alto - m.b}L${x(0)},${alto - m.b}Z` }),
+             el("path", { class: "linea", d }), eje);
+  const cruz = el("line", { class: "cruz", y1: m.a, y2: alto - m.b, opacity: 0 }), marca = el("circle", { class: "marca", r: 5, opacity: 0 });
+  svg.append(cruz, marca);
+  const zona = el("rect", { x: m.i, y: 0, width: ancho - m.i - m.d, height: alto, fill: "transparent" });
+  svg.appendChild(zona);
+  const mover = (ev) => {
+    const caja = svg.getBoundingClientRect(), px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - caja.left;
+    const i = Math.max(0, Math.min(datos.length - 1, Math.round((px * ancho / caja.width - m.i) / (ancho - m.i - m.d) * (datos.length - 1))));
+    const xx = x(i), yy = y(datos[i][METRICA]);
+    cruz.setAttribute("x1", xx); cruz.setAttribute("x2", xx); cruz.setAttribute("opacity", 1);
+    marca.setAttribute("cx", xx); marca.setAttribute("cy", yy); marca.setAttribute("opacity", 1);
+    const tip = $("tip"); tip.hidden = false;
+    tip.style.left = `${xx * caja.width / ancho}px`; tip.style.top = `${yy * caja.height / alto}px`;
+    tip.innerHTML = `${new Date(datos[i].fecha).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}<br><b>${num(datos[i][METRICA])}</b> ${METRICA === "vistas" ? "visitas" : "suscriptores"}`;
+  };
+  const salir = () => { cruz.setAttribute("opacity", 0); marca.setAttribute("opacity", 0); $("tip").hidden = true; };
+  zona.addEventListener("mousemove", mover); zona.addEventListener("touchmove", mover, { passive: true }); zona.addEventListener("touchstart", mover, { passive: true });
+  zona.addEventListener("mouseleave", salir); zona.addEventListener("touchend", salir);
+  pintarTabla(datos);
+}
+function pintarTabla(datos) {
+  $("tabla").innerHTML = `<table class="tabla"><thead><tr><th>Día</th><th>${METRICA === "vistas" ? "Visitas" : "Suscriptores"}</th></tr></thead><tbody>` +
+    datos.slice().reverse().map((p) => `<tr><td>${new Date(p.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</td><td>${num(p[METRICA])}</td></tr>`).join("") + "</tbody></table>";
+}
+document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+  METRICA = b.dataset.metrica;
+  document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("si", x === b));
+  pintarGrafica();
+}));
+$("b-tabla").addEventListener("click", () => { $("tabla").hidden = !$("tabla").hidden; $("b-tabla").textContent = $("tabla").hidden ? "Ver como tabla" : "Ocultar tabla"; });
+window.addEventListener("resize", () => { if (VISTA === "canal") pintarGrafica(); });
+
+function pintarPreparados() {
+  const cuando = Object.fromEntries((E.parrilla || []).map((p) => [p.id, p.cuando]));
+  const lista = E.preparados || [];
+  $("preparados").innerHTML = lista.length ? lista.map((p) => `
+    <div class="video vertical"><img src="${p.miniatura || ""}" alt="">
+      <div><div class="t">${esc(p.titulo)}</div>
+      <div class="meta">Sale ${cuando[p.id] ? `${dia(cuando[p.id])} hacia las ${hora(cuando[p.id])}` : "pronto"} · ${Math.round(p.duracion)} s · ${esc(p.escena?.modo || "")}, ${esc(p.escena?.bioma || "")}, ${esc(p.escena?.hora || "")} · voz ${esc(p.voz || "")}</div>
+      <div class="botones">
+        <button onclick="verPrevia('${esc(p.id)}')">▶ Ver</button>
+        <button onclick="subirYa('${esc(p.id)}')">🚀 Subir ya</button>
+        <button class="peligro" onclick="descartar('${esc(p.id)}')">Descartar</button>
+      </div></div></div>`).join("") : `<div class="vacio">No hay vídeos preparados. Se hacen solos cuando llegan guiones nuevos.</div>`;
+  const subidos = E.subidos || [];
+  $("subidos").innerHTML = subidos.length ? subidos.slice(0, 20).map((s) => `
+    <div class="video vertical"><img src="${s.miniatura || ""}" alt="">
+      <div><div class="t">${esc(s.titulo)}</div>
+      <div class="meta">Subido ${hace(s.subido_en)} · ${s.privacidad === "public" ? "público" : "privado"}${s.vistas !== undefined ? ` · ${num(s.vistas)} visitas` : ""}</div>
+      <div class="botones"><a class="boton" href="https://studio.youtube.com/video/${esc(s.youtube_id)}/edit" target="_blank" rel="noopener">Ver en YouTube</a></div></div></div>`).join("")
+    : `<div class="vacio">Todavía no se ha subido nada desde la nube.</div>`;
+}
+
+let guionesCargados = 0;
+async function pintarGuiones() {
+  if (Date.now() - guionesCargados < 60000) return;
+  guionesCargados = Date.now();
+  const caja = $("guiones");
+  try {
+    const lista = await (await gh(`/repos/${REPO}/contents/nube/guiones?ref=${encodeURIComponent("claude/guiones")}`)).json();
+    const usados = new Set(E?.guiones_usados || []);
+    const esperan = lista.filter((f) => f.name.endsWith(".json") && !usados.has(f.name)).slice(0, 8);
+    if (!esperan.length) { caja.innerHTML = `<div class="vacio">Ningún guion esperando. Claude escribe 2 cada día a las 10:00.</div>`; return; }
+    const guiones = await Promise.all(esperan.map(async (f) => {
+      try { return { f, g: await (await gh(`/repos/${REPO}/contents/${f.path}?ref=${encodeURIComponent("claude/guiones")}`, { headers: { Accept: "application/vnd.github.raw+json" } })).json() }; }
+      catch { return { f, g: null }; }
+    }));
+    caja.innerHTML = guiones.map(({ f, g }) => `<div class="fila-lista"><time>✍️<small>${esc(f.name.slice(5, 10).split("-").reverse().join("/"))}</small></time>
+      <div><div class="t">${esc(g?.titulo || f.name)}</div><div class="meta">${g ? `${g.narracion.join(" ").split(/\s+/).length} palabras · ${esc((g.fuentes || []).map((u) => new URL(u).hostname).join(", "))}` : ""}</div></div></div>`).join("");
+  } catch {
+    caja.innerHTML = `<div class="vacio">Ningún guion esperando todavía.</div>`;
+  }
+}
+
+function pintarRegistro() {
+  const icono = (v) => v.status !== "completed" ? "🟢 trabajando" : v.conclusion === "success" ? "✅ bien" : v.conclusion === "cancelled" ? "⏹ cancelada" : "❌ error";
+  $("vueltas").innerHTML = VUELTAS.length ? VUELTAS.map((v) => {
+    const ini = Date.parse(v.run_started_at || v.created_at), fin = v.status === "completed" ? Date.parse(v.updated_at) : Date.now();
+    const quien = v.event === "workflow_dispatch" ? "desde la app" : "automática";
+    return `<div class="linea-log"><time>${new Date(ini).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</time>
+      <span>${icono(v)} · ${Math.max(1, Math.round((fin - ini) / 60000))} min · ${quien} · <a href="${esc(v.html_url)}" target="_blank" rel="noopener">detalles</a></span></div>`;
+  }).join("") : `<div class="vacio">Sin vueltas todavía.</div>`;
+  const log = (E?.log || []).slice().reverse().slice(0, 80);
+  $("log").innerHTML = log.length ? log.map((l) => `<div class="linea-log ${esc(l.nivel)}"><time>${new Date(l.t * 1000).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</time><span>${esc(l.msg)}</span></div>`).join("")
+    : `<div class="vacio">Sin actividad todavía.</div>`;
+}
+
+/* ---------- acciones ---------- */
+async function verPrevia(id) {
+  const p = (E.preparados || []).find((x) => x.id === id);
+  if (!p) return;
+  aviso("Cargando el vídeo…");
+  try {
+    // Las previas viven en la rama «previas» (la API de contenidos sí deja leerlas desde el navegador)
+    const r = await gh(`/repos/${REPO}/contents/${encodeURIComponent(p.id)}-previa.mp4?ref=previas`, { headers: { Accept: "application/vnd.github.raw+json" } });
+    const v = $("video"); v.src = URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: "video/mp4" }));
+    $("modal").hidden = false; v.play().catch(() => {});
+    $("toast").hidden = true;
+  } catch (e) { aviso("No se ha podido cargar el vídeo: " + e.message); }
+}
+function cerrarVideo() { const v = $("video"); v.pause(); URL.revokeObjectURL(v.src); v.removeAttribute("src"); v.load(); $("modal").hidden = true; }
+$("b-cerrar").addEventListener("click", cerrarVideo);
+async function subirYa(id) {
+  if (!confirm("¿Subir este vídeo a YouTube ahora, sin esperar a su hora?")) return;
+  try { await lanzar(`subir:${id}`); aviso("¡Hecho! En 1-2 minutos empieza a subirse."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
+}
+async function descartar(id) {
+  if (!confirm("¿Descartar este vídeo? No se subirá y se borrará en la próxima vuelta.")) return;
+  try {
+    await guardarControl((c) => ({ descartar: [...new Set([...(c.descartar || []), id])] }), `descartar ${id}`);
+    aviso("Descartado. Se borrará en la próxima vuelta."); await lanzar("ciclo");
+  } catch (e) { aviso("Error: " + e.message); }
+}
+$("a-producir").addEventListener("click", async () => {
+  if ((E?.guiones_en_espera ?? 0) === 0) { aviso("No hay guiones esperando: Claude escribe 2 cada día a las 10:00."); return; }
+  try { await lanzar("producir"); aviso("¡Vamos! En unos minutos verás a los agentes trabajando."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
+});
+$("a-subir").addEventListener("click", async () => {
+  if (!(E?.preparados || []).length) { aviso("No hay vídeos preparados para subir."); return; }
+  if (!confirm("¿Subir ahora el siguiente vídeo preparado?")) return;
+  try { await lanzar("subir_siguiente"); aviso("¡Hecho! En 1-2 minutos empieza a subirse."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
+});
+$("a-pausa").addEventListener("click", async () => {
+  const pausar = !CONTROL?.pausado;
+  try { await guardarControl(() => ({ pausado: pausar }), pausar ? "pausar" : "reanudar"); aviso(pausar ? "Pausado: no hará ni subirá nada hasta que lo reanudes." : "¡Reanudado!"); refrescar(); }
+  catch (e) { aviso("Error: " + e.message); }
+});
+$("a-stats").addEventListener("click", async () => {
+  try { await lanzar("estadisticas"); aviso("Pidiendo datos nuevos a YouTube… tardará 1-2 minutos."); setTimeout(refrescar, 6000); } catch (e) { aviso("Error: " + e.message); }
+});
+$("b-recargar").addEventListener("click", () => { guionesCargados = 0; refrescar(); if (VISTA === "preparados") pintarGuiones(); });
+
+/* ---------- ciclo ---------- */
+let siguiente;
+async function refrescar() {
+  clearTimeout(siguiente);
+  if (!TOKEN) return;
+  let viva = null;
+  try {
+    [E, CONTROL, viva] = await Promise.all([leerEstado(), leerControl(), leerVueltas()]);
+    pintarEstado(viva); pintarAvisos(); pintarParrilla(); pintarCanal(); pintarPreparados(); pintarRegistro();
+    if (VISTA === "canal") pintarGrafica();
+  } catch (e) {
+    if (e.message !== "401") { $("respuesta").innerHTML = "Sin <b>conexión</b>"; $("detalle").textContent = "No se puede hablar con GitHub ahora mismo."; }
+  }
+  siguiente = setTimeout(refrescar, viva ? 8000 : 30000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refrescar(); });
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (TOKEN && REPO) { mostrar(true); construirMapa(); refrescar(); } else { mostrar(false); }
+</script>
+</body>
+</html>
